@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ orderId })
   } catch (error) {
     console.error('[blyss] Supabase order creation failed', error)
-    return NextResponse.json({ error: 'Unable to create order. Check the Supabase table, policies, and environment variables.' }, { status: 500 })
+    const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : error instanceof Error ? error.message : 'Unknown Supabase error'
+    return NextResponse.json({ error: 'Unable to create order.', details: message }, { status: 500 })
   }
 }
 
