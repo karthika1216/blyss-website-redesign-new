@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/mysql'
+import { syncOrdersToExcel } from '@/lib/excel-export'
 import { createClient as createSupabaseClient } from '@/utils/supabase/server'
 
 const statuses = ['Payment Received', 'Measurements Pending', 'Fabric Pending', 'Fabric Received', 'Cutting', 'Stitching', 'Quality Check', 'Ready to Ship', 'Shipped', 'Delivered', 'Cancelled']
@@ -11,25 +12,10 @@ export async function POST(request: NextRequest) {
     if (!body.customerName || !body.email || !body.phone || !body.shippingAddress) return NextResponse.json({ error: 'Customer and delivery details are required.' }, { status: 400 })
     const supabase = await createSupabaseClient()
     const paymentReference = String(body.paymentReference || `TEST-${crypto.randomUUID()}`)
-    const { data: duplicate, error: duplicateError } = await supabase
-      .from('blyss_orders')
-      .select('order_id')
-      .eq('payment_reference', paymentReference)
-      .maybeSingle()
-    if (duplicateError) throw duplicateError
-    if (duplicate) return NextResponse.json({ orderId: duplicate.order_id, duplicate: true })
-    const { data: latest, error: latestError } = await supabase
-      .from('blyss_orders')
-      .select('order_id')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (latestError) throw latestError
-    const next = latest ? Number(String(latest.order_id).replace('BLYSS-', '')) + 1 : 10001
-    const orderId = `BLYSS-${next}`
+    const orderId = `BLYSS-${Date.now()}`
     const paymentStatus = body.paymentProofUrl ? 'Proof Uploaded' : 'Pending'
     const measurements = body.measurements || {}
-    const { data: order, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from('blyss_orders')
       .insert({
         order_id: orderId,
@@ -66,13 +52,12 @@ export async function POST(request: NextRequest) {
         order_status: 'Order Received',
         payment_reference: paymentReference,
       })
-      .select()
-      .single()
+      
     if (insertError) throw insertError
     if (body.cartId) {
       try { await query('DELETE FROM cart_items WHERE cart_id = ?', [body.cartId]) } catch (error) { console.error('[blyss] Cart cleanup failed after Supabase order creation', error) }
     }
-    return NextResponse.json({ orderId, order })
+    return NextResponse.json({ orderId })
   } catch (error) {
     console.error('[blyss] Supabase order creation failed', error)
     return NextResponse.json({ error: 'Unable to create order. Check the Supabase table, policies, and environment variables.' }, { status: 500 })
