@@ -1,0 +1,7 @@
+'use client'
+import Link from 'next/link'
+import { FormEvent, useState } from 'react'
+import { useRouter } from 'next/navigation'
+export default function AdminLogin() { const router=useRouter(); const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const [loading,setLoading]=useState(false)
+ async function submit(e:FormEvent){e.preventDefault();setLoading(true);setError('');const r=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,password})});const d=await r.json();setLoading(false);if(!r.ok){setError(d.error||'Unable to sign in.');return}router.replace('/admin')}
+ return <main className="admin-login-page"><section className="admin-login-card"><Link className="admin-login-logo" href="/">BLYSS<span>ADMIN PORTAL</span></Link><p className="eyebrow">BLYSS ADMIN</p><h1>Admin Login</h1><p className="admin-muted">Sign in to manage orders, payments, and production.</p><form onSubmit={submit}><label>Admin Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="username" /></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required autoComplete="current-password" /></label>{error&&<p className="form-error" role="alert">{error}</p>}<button className="button button-navy" disabled={loading}>{loading?'Signing in…':'Login'}</button></form></section></main> }

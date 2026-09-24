@@ -1,0 +1,7 @@
+'use client'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useState } from 'react'
+import { AdminLogout } from '@/components/admin-logout'
+const items=[['Dashboard','/admin'],['Orders','/admin/orders'],['Customers','/admin/customers'],['Measurements','/admin/measurements'],['Payments','/admin/payments'],['Production / Order Status','/admin/production'],['Design Library','/admin/designs'],['Fabrics','/admin/fabrics'],['Reports','/admin/reports'],['Export Data','/admin/export'],['Notifications','/admin/notifications'],['Settings','/admin/settings']]
+export default function AdminLayout({children}:{children:React.ReactNode}){const pathname=usePathname();const [open,setOpen]=useState(false);if(pathname==='/admin/login')return <>{children}</>;return <div className="admin-app"><aside className={`admin-sidebar ${open?'is-open':''}`}><Link className="admin-brand" href="/admin" onClick={()=>setOpen(false)}>BLYSS <span>ADMIN</span></Link><nav>{items.map(([label,href])=><Link key={href} href={href} className={pathname===href?'is-active':''} onClick={()=>setOpen(false)}>{label}</Link>)}</nav><AdminLogout/></aside><div className="admin-main"><header className="admin-topbar"><button className="admin-menu-toggle" type="button" aria-expanded={open} aria-controls="admin-navigation" onClick={()=>setOpen(!open)}>Menu</button><span>Operations workspace</span><AdminLogout/></header><main id="admin-navigation" className="admin-page-content">{children}</main></div></div>}
